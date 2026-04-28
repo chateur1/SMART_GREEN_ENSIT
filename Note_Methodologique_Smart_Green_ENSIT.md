@@ -178,6 +178,3 @@ Une valeur est signalée comme anomalie si son écart par rapport à la tendance
 - **ISO 14064-1 :2018** — Spécification pour la quantification et la déclaration des GES
 
 ---
-
-*Document généré par la plateforme Smart Green ENSIT — ENSIT GreenTech Challenge 2026*
-*Contact : Challenge.greentech.ensit@gmail.com*
