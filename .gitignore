@@ -1,0 +1,28 @@
+# Secrets - NE JAMAIS COMMITER
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.pyc
+
+# Node
+node_modules/
+build/
+.cache/
+
+# Exports générés
+*.pdf
+*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+.docker/

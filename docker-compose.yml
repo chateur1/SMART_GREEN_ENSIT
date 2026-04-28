@@ -1,0 +1,94 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════
+# Smart Green ENSIT — Stack complète
+# Lancement : docker-compose up --build
+# Arrêt     : docker-compose down
+# ══════════════════════════════════════════════════════
+
+services:
+
+  # ── Base de données PostgreSQL ──────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: sge_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       smart_green
+      POSTGRES_USER:     sge_user
+      POSTGRES_PASSWORD: sge_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - sge_db_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sge_user -d smart_green"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend FastAPI ─────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sge_backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL:                  postgresql://sge_user:sge_pass_2026@db:5432/smart_green
+      SECRET_KEY:                    ${SECRET_KEY:-smart-green-ensit-jwt-secret-2026-CHANGEZ-MOI}
+      ALGORITHM:                     HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES:   60
+      FRONTEND_URL:                  http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Retirer --reload en production
+
+  # ── Frontend React ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sge_frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+
+  # ── Adminer (interface DB optionnelle) ──────────────
+  adminer:
+    image: adminer:latest
+    container_name: sge_adminer
+    restart: unless-stopped
+    ports:
+      - "8888:8080"
+    depends_on:
+      - db
+
+volumes:
+  sge_db_data:
+
+# ══════════════════════════════════════════════════════
+# ACCÈS APRÈS LANCEMENT
+# ══════════════════════════════════════════════════════
+# Frontend  : http://localhost:3000
+# Backend   : http://localhost:8000
+# API Docs  : http://localhost:8000/docs  (Swagger UI)
+# Adminer   : http://localhost:8080
+#   → Système  : PostgreSQL
+#   → Serveur  : db
+#   → Utilisateur : sge_user
+#   → Mot de passe : sge_pass_2026
+#   → Base    : smart_green
